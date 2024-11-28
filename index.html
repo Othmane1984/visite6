@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visite de sécurité annuelles</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f4f4f4;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Visite de sécurité annuelles</h1>
+    <form id="dataForm">
+      <label for="canot">Canot</label>
+      <input type="text" id="canot" name="canot" required placeholder="Enter Canot">
+
+      <label for="matricule">Matricule</label>
+      <input type="text" id="matricule" name="matricule" required placeholder="Enter Matricule">
+
+      <label for="etat">État</label>
+      <select id="etat" name="etat" required>
+        <option value="">Select...</option>
+        <option value="ok">OK</option>
+        <option value="vétuste">Vétuste</option>
+        <option value="peinture_nok">Peinture Nok</option>
+        <option value="matricule_nok">Matricule Nok</option>
+      </select>
+
+      <button type="submit">Add Entry</button>
+    </form>
+
+    <h2>Stored Data</h2>
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Canot</th>
+          <th>Matricule</th>
+          <th>État</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Entries will be dynamically added here -->
+      </tbody>
+    </table>
+
+    <div class="button-group">
+      <button id="exportButton">Export to Excel</button>
+      <button id="resetButton">Reset Data</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    // Get references to form, table, buttons
+    const form = document.getElementById("dataForm");
+    const tableBody = document.querySelector("#dataTable tbody");
+    const exportButton = document.getElementById("exportButton");
+    const resetButton = document.getElementById("resetButton");
+
+    // Load existing data from localStorage on page load
+    window.onload = () => {
+      loadData();
+    };
+
+    // Handle form submission
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      // Get input values
+      const canot = document.getElementById("canot").value;
+      const matricule = document.getElementById("matricule").value;
+      const etat = document.getElementById("etat").value;
+
+      // Add the new entry to localStorage
+      addEntryToStorage(canot, matricule, etat);
+
+      // Create a new table row
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td>${canot}</td>
+        <td>${matricule}</td>
+        <td>${etat}</td>
+      `;
+      tableBody.appendChild(newRow);
+
+      // Reset the form
+      form.reset();
+    });
+
+    // Add entry to localStorage
+    function addEntryToStorage(canot, matricule, etat) {
+      const storedData = JSON.parse(localStorage.getItem("entries")) || [];
+      storedData.push({ canot, matricule, etat });
+      localStorage.setItem("entries", JSON.stringify(storedData));
+    }
+
+    // Load data from localStorage and display it
+    function loadData() {
+      const storedData = JSON.parse(localStorage.getItem("entries")) || [];
+      storedData.forEach((entry) => {
+        const newRow = document.createElement("tr");
+        newRow.innerHTML = `
+          <td>${entry.canot}</td>
+          <td>${entry.matricule}</td>
+          <td>${entry.etat}</td>
+        `;
+        tableBody.appendChild(newRow);
+      });
+    }
+
+    // Handle export to Excel
+    exportButton.addEventListener("click", () => {
+      const data = [];
+      const rows = document.querySelectorAll("#dataTable tr");
+      rows.forEach((row) => {
+        const cells = row.querySelectorAll("th, td");
+        const rowData = Array.from(cells).map((cell) => cell.innerText);
+        data.push(rowData);
+      });
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+      XLSX.writeFile(workbook, "visite_securite.xlsx");
+    });
+
+    // Handle Reset Button Click
+    resetButton.addEventListener("click", () => {
+      const confirmReset = confirm("Are you sure you want to reset all stored data?");
+      if (confirmReset) {
+        localStorage.removeItem("entries");
+        tableBody.innerHTML = "";
+        alert("All data has been reset.");
+      }
+    });
+  </script>
+</body>
+</html>
